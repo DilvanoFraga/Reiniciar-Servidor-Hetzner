@@ -1,6 +1,7 @@
 # Reiniciar Servidor às 03:00 (n8n)
 
 Workflow n8n que às 03:00 reinicia servidores Hetzner para clientes do PostgreSQL: obtém o servidor, executa poweroff, espera 2 minutos, aciona poweron e notifica no Chatwoot. 
+![Fluxo onde mostra como ficara](Fluxo_Reiniciar.png)
 
 ## Visão Geral
 Automatiza a reinicialização diário do servidores Hetzner para clientes listados no PostgreSQL, com notificação no Chatwoot. O workflow está em `Reiniciar Servidor as 03_00.json` e pode ser importado diretamente no n8n.
