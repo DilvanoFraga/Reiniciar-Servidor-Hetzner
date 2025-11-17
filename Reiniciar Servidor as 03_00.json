@@ -1,0 +1,263 @@
+{
+  "name": "Reiniciar Servidor as 03:00",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 3 * * *"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -528,
+        272
+      ],
+      "id": "c0efc9e3-e4d1-4f93-92e9-c10bf7bcf2b0",
+      "name": "Horário de Reiniciar"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "cliente_megacloud",
+          "mode": "list",
+          "cachedResultName": "cliente_megacloud"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "id",
+              "condition": "!=",
+              "value": "fcf09a53-3e3c-4306-b12e-39c1c09da10f"
+            },
+            {
+              "column": "id",
+              "condition": "!=",
+              "value": "e8f019d0-8d5a-48ff-95e9-d5f20c60d0bd"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -272,
+        272
+      ],
+      "id": "b7eb7923-e13c-4840-9286-73876ae28b1e",
+      "name": "Buscando os Servidores",
+      "credentials": {
+        "postgres": {
+          "id": "UbrTScAbz7qQunvY",
+          "name": "Clientes"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        288
+      ],
+      "id": "5cedc514-a248-4e48-90aa-0486b63f3a34",
+      "name": "Wait",
+      "webhookId": "33fa7ab5-b05a-4612-97bb-7a81ecd37f6e"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Import axios\nconst axios = require('axios');\n\nconst accessToken = $input.first().json.token_hetzner;\nconst url = 'https://api.hetzner.cloud/v1/servers';\n\nconst response = await axios.get(url, {\n  headers: {\n    'Authorization': `Bearer ${accessToken}`,\n    'Content-Type': 'application/json'\n  }\n});\n\nreturn response.data.servers[0];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        288
+      ],
+      "id": "2965fb84-8d57-475d-a1b7-b54ee1c9f6f3",
+      "name": "GetServer"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Importa axios\nconst axios = require('axios');\n\n// Recupera o ID do servidor e o token\nconst serverId = $json.id;\nconst accessToken = $('Buscando os Servidores').item.json.token_hetzner;\n\n// Monta a URL com a ação \"reboot\" no caminho\nconst url =`https://api.hetzner.cloud/v1/servers/${serverId}/actions/poweroff`;\n\ntry {\n  // Faz a requisição POST sem corpo\n  const response = await axios.post(url, null, {\n    headers: {\n      'Authorization': `Bearer ${accessToken}`,\n      'Content-Type': 'application/json'\n    }\n  });\n\n  return [{status: 'success', response: response.data}];\n  } catch {\n  return [{\n    status: 'error'}];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        288
+      ],
+      "id": "5da60f67-070b-44bf-a86d-c4184764d04a",
+      "name": "HertznerAPI_PowerOff"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Importa axios\nconst axios = require('axios');\n\n// Recupera o ID do servidor e o token\nconst serverId = $('GetServer').first().json.id;\nconst accessToken = $('Buscando os Servidores').item.json.token_hetzner;\n\n// Monta a URL com a ação \"reboot\" no caminho\nconst url =`https://api.hetzner.cloud/v1/servers/${serverId}/actions/poweron`;\n\ntry {\n  // Faz a requisição POST sem corpo\n  const response = await axios.post(url, null, {\n    headers: {\n      'Authorization': `Bearer ${accessToken}`,\n      'Content-Type': 'application/json'\n    }\n  });\n\n  return [{status: 'success', response: response.data}];\n  } catch {\n  return [{\n    status: 'error'}];\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        848,
+        288
+      ],
+      "id": "b82baa05-c59d-4230-ae14-509523ce89a5",
+      "name": "HertznerAPI_PowerOn"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        0,
+        272
+      ],
+      "id": "a5d58cdc-d4e6-488b-9826-9c0be69ff0e4",
+      "name": "Loop"
+    },
+    {
+      "parameters": {
+        "resource": "Messages",
+        "operation": "Create A New Message In A Conversation",
+        "account_id": 1,
+        "conversation_id": "=4616",
+        "content": "=Servidor **{{ $json.nome }}** reiniciado",
+        "private": false,
+        "content_type": "input_email",
+        "template_params": "{}",
+        "requestOptions": {}
+      },
+      "type": "@devlikeapro/n8n-nodes-chatwoot.chatWoot",
+      "typeVersion": 1,
+      "position": [
+        208,
+        112
+      ],
+      "id": "3efccda4-09ef-4d27-b8d7-46c6c2eca4c6",
+      "name": "Mensagem de Sucesso",
+      "credentials": {
+        "chatwootApi": {
+          "id": "qf8sjSw52QXQarDG",
+          "name": "MegaChat"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Horário de Reiniciar": {
+      "main": [
+        [
+          {
+            "node": "Buscando os Servidores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscando os Servidores": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HertznerAPI_PowerOn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GetServer": {
+      "main": [
+        [
+          {
+            "node": "HertznerAPI_PowerOff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HertznerAPI_PowerOff": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HertznerAPI_PowerOn": {
+      "main": [
+        [
+          {
+            "node": "Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop": {
+      "main": [
+        [
+          {
+            "node": "Mensagem de Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "GetServer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6993e551-83fd-4ee4-8eb0-9c5dc209dbbc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7403489e9d324c31b7c7aae2bd2abb98c29a5d66409618a8a13b69201ae3f432"
+  },
+  "id": "IbT6I6WHPkNzBqCL",
+  "tags": []
+}
