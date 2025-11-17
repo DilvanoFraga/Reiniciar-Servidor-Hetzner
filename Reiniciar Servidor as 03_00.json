@@ -31,9 +31,9 @@
         },
         "table": {
           "__rl": true,
-          "value": "cliente_megacloud",
+          "value": "cliente",
           "mode": "list",
-          "cachedResultName": "cliente_megacloud"
+          "cachedResultName": "cliente"
         },
         "returnAll": true,
         "where": {
@@ -157,7 +157,7 @@
       "credentials": {
         "chatwootApi": {
           "id": "qf8sjSw52QXQarDG",
-          "name": "MegaChat"
+          "name": "chatwoot"
         }
       }
     }
